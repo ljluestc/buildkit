@@ -111,18 +111,23 @@ func getEmulator(ctx context.Context, p *pb.Platform) (*emulator, error) {
 		}
 	}
 
-	a, ok := qemuArchMap[pp.Architecture]
-	if !ok {
-		a = pp.Architecture
-	}
-
-	fn, err := exec.LookPath("buildkit-qemu-" + a)
+	fn, err := lookupEmulator(pp.Architecture)
 	if err != nil {
 		bklog.G(ctx).Warn(err.Error()) // TODO: remove this with pull support
 		return nil, nil                // no emulator available
 	}
 
 	return &emulator{path: fn}, nil
+}
+
+// lookupEmulator returns the path to the embedded buildkit qemu emulator for
+// the given (normalized) GOARCH, or an error if none is installed in PATH.
+func lookupEmulator(arch string) (string, error) {
+	a, ok := qemuArchMap[arch]
+	if !ok {
+		a = arch
+	}
+	return exec.LookPath("buildkit-qemu-" + a)
 }
 
 // ignoreSELinuxXAttrErrorHandler is an error handler for xattr copy operations
